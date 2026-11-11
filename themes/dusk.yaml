@@ -1,0 +1,107 @@
+Instrument Dusk:
+  card-mod-theme: "Instrument Dusk"
+
+  # Domain hues (used by dashboard cards as var(--c-...))
+  c-current: "#4CC9F0"
+  c-ember: "#FF8A3D"
+  c-tide: "#2EE6C5"
+  c-charge: "#7BE495"
+  c-lamp: "#FFD166"
+  c-alert: "#FF6B81"
+
+  primary-color: "#4CC9F0"
+  accent-color: "#2EE6C5"
+  dark-primary-color: "#2AA6CE"
+  light-primary-color: "#8EDDF6"
+  primary-text-color: "#EEF2FF"
+  secondary-text-color: "#8E9AB8"
+  disabled-text-color: "rgba(142, 154, 184, 0.5)"
+  text-primary-color: "#0A0F1E"
+  divider-color: "rgba(255, 255, 255, 0.08)"
+  primary-font-family: "ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+  paper-font-common-base_-_font-family: "ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+
+  # Midnight with two very soft blooms
+  lovelace-background: >-
+    radial-gradient(900px 640px at 6% -10%, rgba(76, 201, 240, 0.16), transparent 62%),
+    radial-gradient(900px 680px at 104% 112%, rgba(255, 138, 61, 0.12), transparent 62%),
+    linear-gradient(180deg, #0A0F1E 0%, #0B1122 100%) fixed
+  primary-background-color: "#0A0F1E"
+  clear-background-color: "#0A0F1E"
+  secondary-background-color: "#131B30"
+
+  # Dashboard glass (cards only)
+  ha-card-background: "rgba(255, 255, 255, 0.045)"
+  ha-card-border-radius: "20px"
+  ha-card-border-width: "1px"
+  ha-card-border-color: "rgba(255, 255, 255, 0.09)"
+  ha-card-box-shadow: "none"
+  ha-card-backdrop-filter: "blur(18px) saturate(140%)"
+  app-header-background-color: "rgba(10, 15, 30, 0.6)"
+  app-header-text-color: "#EEF2FF"
+  sidebar-background-color: "rgba(10, 15, 30, 0.7)"
+  sidebar-text-color: "#8E9AB8"
+  sidebar-selected-text-color: "#4CC9F0"
+  sidebar-selected-icon-color: "#4CC9F0"
+
+  # Popups, menus, dialogs: SOLID
+  card-background-color: "#121A2E"
+  mdc-theme-surface: "#121A2E"
+  mdc-menu-surface-fill-color: "#121A2E"
+  mdc-select-fill-color: "#18223A"
+  mdc-select-dropdown-icon-color: "#4CC9F0"
+  mdc-text-field-fill-color: "#18223A"
+  mdc-text-field-idle-line-color: "rgba(255, 255, 255, 0.25)"
+  ha-dialog-surface-background: "#0F172A"
+  ha-bottom-sheet-surface-background: "#0F172A"
+  ha-select-box-background: "#18223A"
+  popover-background: "#121A2E"
+  menu-background-color: "#121A2E"
+  mdc-dialog-scrim-color: "rgba(3, 5, 14, 0.72)"
+  dialog-box-shadow: "0 24px 70px rgba(0, 0, 0, 0.6)"
+  dialog-backdrop-filter: "blur(14px)"
+  ha-dialog-surface-backdrop-filter: "none"
+
+  # Controls
+  switch-checked-color: "#4CC9F0"
+  switch-checked-track-color: "rgba(76, 201, 240, 0.45)"
+  paper-slider-active-color: "#4CC9F0"
+  paper-slider-knob-color: "#4CC9F0"
+  state-icon-active-color: "#FFD166"
+  state-icon-color: "#8E9AB8"
+  success-color: "#7BE495"
+  warning-color: "#FFD166"
+  error-color: "#FF6B81"
+  info-color: "#4CC9F0"
+
+  mush-rgb-green: "123, 228, 149"
+  mush-rgb-orange: "255, 138, 61"
+  mush-rgb-red: "255, 107, 129"
+  mush-rgb-blue: "76, 201, 240"
+  mush-rgb-cyan: "46, 230, 197"
+  mush-rgb-amber: "255, 209, 102"
+  mush-rgb-purple: "150, 140, 255"
+  mush-rgb-pink: "255, 140, 190"
+  mush-card-primary-font-weight: "600"
+  mush-card-primary-font-size: "15px"
+  mush-card-secondary-font-size: "13px"
+  mush-card-secondary-color: "#8E9AB8"
+  bubble-accent-color: "#4CC9F0"
+  bubble-border-radius: "20px"
+
+  # Every card: hairline glass. A card can set --dom to show a domain accent edge.
+  card-mod-card: |
+    ha-card {
+      background: rgba(255,255,255,0.045);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      backdrop-filter: blur(18px) saturate(140%);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 20px;
+      box-shadow: inset 3px 0 0 var(--dom, transparent), 0 8px 24px rgba(0,0,0,0.25);
+      transition: border-color .15s ease;
+    }
+    ha-card:active { border-color: var(--dom, rgba(255,255,255,0.25)); }
+
+  card-mod-more-info: |
+    ha-dialog { --dialog-surface-background: #0F172A; }
+    ha-md-dialog { --md-dialog-container-color: #0F172A; }

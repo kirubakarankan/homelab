@@ -1,0 +1,105 @@
+Aurora Night:
+  card-mod-theme: "Aurora Night"
+
+  # Palette: electric teal, violet, magenta on deep midnight
+  primary-color: "#2de2c8"
+  accent-color: "#b388ff"
+  dark-primary-color: "#14b8a6"
+  light-primary-color: "#7dfbe6"
+  primary-text-color: "#f2f5ff"
+  secondary-text-color: "rgba(214, 222, 255, 0.62)"
+  disabled-text-color: "rgba(214, 222, 255, 0.35)"
+  text-primary-color: "#07091a"
+  divider-color: "rgba(255, 255, 255, 0.10)"
+
+  # Aurora background: three glowing blooms over midnight
+  lovelace-background: >-
+    radial-gradient(900px 620px at 8% -8%, rgba(45, 226, 200, 0.30), transparent 62%),
+    radial-gradient(820px 640px at 100% 4%, rgba(139, 92, 246, 0.34), transparent 60%),
+    radial-gradient(1000px 720px at 55% 118%, rgba(236, 72, 153, 0.24), transparent 62%),
+    linear-gradient(165deg, #060818 0%, #0a0f2c 55%, #130a2b 100%) fixed
+  primary-background-color: "#080b1f"
+  secondary-background-color: "#161c3f"
+  clear-background-color: "#080b1f"
+
+  # Glass surfaces
+  card-background-color: "#141a3a"
+  ha-card-background: "rgba(255, 255, 255, 0.06)"
+
+  # Popups, dropdown menus, selects, dialogs: SOLID so nothing shows through
+  mdc-theme-surface: "#141a3a"
+  mdc-menu-surface-fill-color: "#141a3a"
+  mdc-select-fill-color: "#1a2148"
+  mdc-select-dropdown-icon-color: "#2de2c8"
+  mdc-text-field-fill-color: "#1a2148"
+  mdc-text-field-idle-line-color: "rgba(255,255,255,0.25)"
+  ha-dialog-surface-background: "#10163a"
+  ha-bottom-sheet-surface-background: "#10163a"
+  ha-select-box-background: "#1a2148"
+  popover-background: "#141a3a"
+  menu-background-color: "#141a3a"
+  mush-select-background: "#141a3a"
+  mdc-dialog-scrim-color: "rgba(3, 5, 18, 0.7)"
+  dialog-box-shadow: "0 24px 70px rgba(0, 0, 0, 0.6)"
+  ha-card-border-radius: "26px"
+  ha-card-border-width: "1px"
+  ha-card-border-color: "rgba(255, 255, 255, 0.14)"
+  ha-card-box-shadow: "0 10px 34px rgba(0, 0, 0, 0.38)"
+  ha-card-backdrop-filter: "blur(22px) saturate(170%)"
+  app-header-background-color: "rgba(8, 11, 31, 0.55)"
+  app-header-text-color: "#f2f5ff"
+  sidebar-background-color: "rgba(8, 11, 31, 0.62)"
+  sidebar-text-color: "rgba(214, 222, 255, 0.75)"
+  sidebar-selected-text-color: "#2de2c8"
+  sidebar-selected-icon-color: "#2de2c8"
+  dialog-backdrop-filter: "blur(14px)"
+  ha-dialog-surface-backdrop-filter: "none"
+
+  # Controls
+  switch-checked-color: "#2de2c8"
+  switch-checked-track-color: "rgba(45, 226, 200, 0.45)"
+  paper-slider-active-color: "#2de2c8"
+  paper-slider-knob-color: "#2de2c8"
+  state-icon-active-color: "#ffd166"
+  state-icon-color: "rgba(214, 222, 255, 0.6)"
+
+  # Status colours
+  success-color: "#4ade80"
+  warning-color: "#fbbf24"
+  error-color: "#fb7185"
+  info-color: "#60a5fa"
+
+  # Mushroom + Bubble accents
+  mush-rgb-green: "74, 222, 128"
+  mush-rgb-orange: "251, 191, 36"
+  mush-rgb-red: "251, 113, 133"
+  mush-rgb-blue: "96, 165, 250"
+  mush-rgb-purple: "179, 136, 255"
+  mush-rgb-pink: "244, 114, 182"
+  mush-rgb-cyan: "45, 226, 200"
+  mush-card-primary-font-weight: "600"
+  mush-card-primary-font-size: "15px"
+  bubble-accent-color: "#2de2c8"
+  bubble-border-radius: "24px"
+
+  # Card-mod: glass gradient + glowing rim on every card
+  card-mod-card: |
+    ha-card {
+      background: linear-gradient(150deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.04) 55%, rgba(255,255,255,0.07) 100%);
+      -webkit-backdrop-filter: blur(22px) saturate(170%);
+      backdrop-filter: blur(22px) saturate(170%);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 10px 34px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.20);
+      border-radius: 26px;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+    ha-card:hover {
+      border-color: rgba(45,226,200,0.45);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.45), 0 0 26px rgba(45,226,200,0.18), inset 0 1px 0 rgba(255,255,255,0.25);
+    }
+
+  card-mod-more-info: |
+    ha-dialog { --dialog-surface-background: #10163a; }
+    ha-md-dialog { --md-dialog-container-color: #10163a; }
+  card-mod-select: |
+    :host { --mdc-theme-surface: #141a3a; }

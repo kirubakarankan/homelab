@@ -1,0 +1,15 @@
+# Allowlist: everything is ignored unless named here, so secrets, .storage, the database and keys can never be added by accident.
+/*
+!/.gitignore
+!/.github/
+!/README.md
+!/configuration.yaml
+!/automations.yaml
+!/scripts.yaml
+!/scenes.yaml
+!/packages/
+!/dashboards/
+!/themes/
+!/blueprints/
+!/containers/
+/themes/Frosted Glass/

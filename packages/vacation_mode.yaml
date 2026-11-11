@@ -1,0 +1,55 @@
+# Vacation mode: the 2nd floor lamp (on the Tapo plug) imitates someone being home.
+input_boolean:
+  vacation_mode:
+    name: Vacation mode
+    icon: mdi:airplane
+
+automation:
+  - id: vacation_lamp
+    alias: Vacation - lamp imitates presence
+    mode: restart
+    triggers:
+      - trigger: sun
+        event: sunset
+        offset: "-00:15:00"
+        id: lamp_on
+      - trigger: time
+        at: "23:00:00"
+        id: lamp_off
+      # re-sync on toggle, restart, or plug coming back
+      - trigger: state
+        entity_id: input_boolean.vacation_mode
+        to: "on"
+        id: sync
+      - trigger: homeassistant
+        event: start
+        id: sync
+      - trigger: state
+        entity_id: switch.2nd_floor
+        from: unavailable
+        id: sync
+    conditions:
+      - condition: state
+        entity_id: input_boolean.vacation_mode
+        state: "on"
+    actions:
+      - choose:
+          - conditions: "{{ trigger.id == 'lamp_on' }}"
+            sequence:
+              - delay:
+                  minutes: "{{ range(0, 21) | random }}"
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.2nd_floor
+          - conditions: "{{ trigger.id == 'lamp_off' }}"
+            sequence:
+              - delay:
+                  minutes: "{{ range(0, 21) | random }}"
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.2nd_floor
+        default:
+          # sync: lamp should be on in the evening window (after dusk, before 23:00)
+          - action: "switch.turn_{{ 'on' if (12 <= now().hour < 23 and state_attr('sun.sun','elevation') | float(90) < 3) else 'off' }}"
+            target:
+              entity_id: switch.2nd_floor

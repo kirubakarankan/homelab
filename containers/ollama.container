@@ -1,0 +1,23 @@
+[Unit]
+Description=Ollama (local LLM)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+ContainerName=ollama
+Image=docker.io/ollama/ollama:0.40.14
+Network=host
+Environment=OLLAMA_HOST=127.0.0.1:11434
+Environment=OLLAMA_KEEP_ALIVE=-1
+Environment=OLLAMA_MAX_LOADED_MODELS=1
+Environment=OLLAMA_NUM_PARALLEL=1
+Volume=/opt/ollama:/root/.ollama
+# shortcut: no memory cap yet, add Memory= here once the box has rebooted with cgroup_enable=memory
+PodmanArgs=--cpus=3
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

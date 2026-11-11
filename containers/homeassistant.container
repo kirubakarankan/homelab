@@ -1,0 +1,20 @@
+[Unit]
+Description=Home Assistant
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+ContainerName=homeassistant
+Image=ghcr.io/home-assistant/home-assistant:2026.10.4
+Network=host
+PodmanArgs=--privileged
+Environment=TZ=Europe/Amsterdam
+Volume=/opt/homeassistant/config:/config
+Volume=/run/dbus:/run/dbus:ro
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+name: Home Assistant config check
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Same version as containers/homeassistant.container
+      - run: docker run --rm -v "$PWD:/config" ghcr.io/home-assistant/home-assistant:2026.10.4 python -m homeassistant --script check_config -c /config

@@ -1,0 +1,110 @@
+# Evening daily summary: energy, cost, weather, car, laundry.
+# Add the P1 meter later: see "P1 HOOK" below.
+
+input_number:
+  electricity_price:
+    name: Electricity price
+    min: 0
+    max: 1
+    step: 0.001
+    unit_of_measurement: "EUR/kWh"
+    mode: box
+    icon: mdi:currency-eur
+    initial: 0.28   # all-in tariff EUR/kWh; re-applied on every HA restart
+
+utility_meter:
+  daily_washer_energy:
+    source: sensor.laundry_room_laundry_room_washer_energy
+    cycle: daily
+  daily_dryer_energy:
+    source: sensor.laundry_room_kaayavekradhu_energy
+    cycle: daily
+  daily_washer_water:
+    source: sensor.laundry_room_laundry_room_washer_water_consumption
+    cycle: daily
+  daily_car_charge_energy:
+    source: sensor.ground_floor_blacky_charge_energy_added
+    cycle: daily
+
+template:
+  - sensor:
+      - name: "Daily tracked energy"
+        unique_id: daily_tracked_energy
+        unit_of_measurement: kWh
+        device_class: energy
+        # P1 HOOK: once the P1 meter exists, replace this sum with the
+        # daily import meter (and subtract export) so it reflects the whole house.
+        state: >
+          {{ (states('sensor.2nd_floor_today_s_consumption') | float(0)
+            + states('sensor.living_room_today_s_consumption') | float(0)
+            + states('sensor.daily_washer_energy') | float(0)
+            + states('sensor.daily_dryer_energy') | float(0)
+            + states('sensor.daily_car_charge_energy') | float(0)) | round(2) }}
+      - name: "Daily tracked cost"
+        unique_id: daily_tracked_cost
+        unit_of_measurement: EUR
+        state: >
+          {{ (states('sensor.daily_tracked_energy') | float(0)
+              * states('input_number.electricity_price') | float(0)) | round(2) }}
+
+script:
+  daily_summary:
+    alias: Daily summary
+    mode: single
+    sequence:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.forecast_home
+        data:
+          type: daily
+        response_variable: fc
+      - variables:
+          tmr: "{{ (fc['weather.forecast_home'].forecast | default([]))[1] | default({}) }}"
+          now_w: "{{ states('weather.forecast_home') | replace('-', ' ') }}"
+          heat_line: >-
+            {% set hot = expand('binary_sensor.living_room_heating','binary_sensor.bedroom_heating','binary_sensor.kiru_work_room_heating','binary_sensor.vini_work_room_heating') | selectattr('state','eq','on') | map(attribute='name') | map('replace',' Heating','') | list %}
+            {% set wins = expand('binary_sensor.living_room_window_open','binary_sensor.bedroom_window_open','binary_sensor.kiru_work_room_window_open','binary_sensor.vini_work_room_window_open') | selectattr('state','eq','on') | map(attribute='name') | map('replace',' Window Open','') | list %}
+            {% set offs = ['climate.living_room','climate.bedroom','climate.kiru_work_room','climate.vini_work_room'] | select('is_state','off') | list | count %}
+            🌡 Living {{ states('sensor.living_room_temperature') | float(0) | round(1) }}° · Bedroom {{ states('sensor.bedroom_temperature') | float(0) | round(1) }}° · Kiru {{ states('sensor.kiru_work_room_temperature') | float(0) | round(1) }}° · Vini {{ states('sensor.vini_work_room_temperature') | float(0) | round(1) }}°
+            {{ '\n' }}{{ 'Heating: ' ~ (hot | join(', ')) if hot else ('All rooms off (no schedule running)' if offs == 4 else 'Heating idle') }}{{ ' · 🪟 open: ' ~ (wins | join(', ')) if wins else '' }}
+          laundry_kwh: >
+            {{ (states('sensor.daily_washer_energy') | float(0)
+              + states('sensor.daily_dryer_energy') | float(0)) | round(2) }}
+          msg: >
+            ⚡ {{ states('sensor.daily_tracked_energy') }} kWh · €{{ states('sensor.daily_tracked_cost') }}
+            (plugs {{ (states('sensor.2nd_floor_today_s_consumption') | float(0)
+              + states('sensor.living_room_today_s_consumption') | float(0)) | round(2) }},
+            laundry {{ laundry_kwh }}, car {{ states('sensor.daily_car_charge_energy') | float(0) | round(1) }})
+
+            🧺 Washer {{ states('sensor.daily_washer_energy') | float(0) | round(2) }} kWh /
+            {{ states('sensor.daily_washer_water') | float(0) | round(0) | int }} L,
+            dryer {{ states('sensor.daily_dryer_energy') | float(0) | round(2) }} kWh
+
+            🚗 Battery {{ states('sensor.ground_floor_blacky_battery_level') }}% ·
+            {{ states('sensor.ground_floor_blacky_battery_range') | float(0) | round(0) | int }} km ·
+            {{ 'plugged in' if is_state('binary_sensor.ground_floor_blacky_charge_cable', 'on') else 'not plugged in' }}
+
+            {{ heat_line }}
+
+            🌤 Now {{ now_w }}, {{ state_attr('weather.forecast_home', 'temperature') }}°C.
+            Tomorrow {{ tmr.condition | default('?') | replace('-', ' ') }},
+            {{ tmr.templow | default('?') }}–{{ tmr.temperature | default('?') }}°C,
+            rain {{ tmr.precipitation | default(0) }} mm
+      - action: persistent_notification.create
+        data:
+          title: Daily summary
+          message: "{{ msg }}"
+          notification_id: daily_summary
+      - action: notify.mobile_app_kirus_iphone
+        data:
+          title: Daily summary
+          message: "{{ msg }}"
+
+automation:
+  - id: daily_summary_evening
+    alias: Daily summary (evening)
+    triggers:
+      - trigger: time
+        at: "21:00:00"
+    actions:
+      - action: script.daily_summary

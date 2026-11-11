@@ -1,0 +1,37 @@
+# 2nd floor Tapo plug: OFF from 22:00 to 07:00, ON the rest of the day.
+automation:
+  - id: second_floor_plug_schedule
+    alias: 2nd floor plug schedule (off 22:00-07:00)
+    mode: restart
+    triggers:
+      - trigger: time
+        at: "22:00:00"
+      - trigger: time
+        at: "07:00:00"
+      # catch-up after an HA restart or the plug coming back online
+      - trigger: homeassistant
+        event: start
+      - trigger: state
+        entity_id: switch.2nd_floor
+        from: unavailable
+      # when vacation mode ends, resume the normal schedule
+      - trigger: state
+        entity_id: input_boolean.vacation_mode
+        to: "off"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.vacation_mode
+        state: "off"
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ now().hour >= 22 or now().hour < 7 }}"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.2nd_floor
+        default:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.2nd_floor

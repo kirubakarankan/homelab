@@ -1,0 +1,839 @@
+title: Dusk
+views:
+  # ───────────────────────── HOME ─────────────────────────
+  - title: Home
+    path: home
+    icon: mdi:home-variant
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ 'Good morning' if now().hour < 12 else 'Good afternoon' if now().hour < 18 else 'Good evening' }}
+            secondary: "{{ now().strftime('%A %-d %B') }} · {{ states('sensor.kv_home_home_presence') | title }}"
+            icon: ''
+            layout: horizontal
+            card_mod:
+              style:
+                .: |
+                  ha-card { background: none !important; border: none !important; box-shadow: none !important;
+                             -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 38px !important; font-weight: 500 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 15px !important; }
+          - type: custom:mushroom-chips-card
+            alignment: start
+            chips:
+              - type: weather
+                entity: weather.forecast_home
+                show_conditions: true
+                show_temperature: true
+              - type: template
+                icon: mdi:flash
+                icon_color: blue
+                content: "{{ states('sensor.daily_tracked_energy') }} kWh"
+              - type: template
+                icon: mdi:currency-eur
+                icon_color: green
+                content: "€{{ states('sensor.daily_tracked_cost') }}"
+              - type: template
+                icon: mdi:car-electric
+                icon_color: green
+                content: >-
+                  {{ states('sensor.ground_floor_blacky_battery_level') ~ '%' if has_value('sensor.ground_floor_blacky_battery_level') else 'asleep' }}
+              - type: template
+                icon: mdi:radiator
+                icon_color: orange
+                content: >-
+                  {{ expand('binary_sensor.living_room_heating','binary_sensor.bedroom_heating','binary_sensor.kiru_work_room_heating','binary_sensor.vini_work_room_heating') | selectattr('state','eq','on') | list | count }} heating
+      - type: grid
+        cards:
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ states('sensor.daily_tracked_energy') | float(0) | round(2) }}
+            secondary: >-
+              kWh today · €{{ states('sensor.daily_tracked_cost') }}
+            icon: mdi:flash
+            icon_color: blue
+            layout: horizontal
+            card_mod:
+              style:
+                .: |
+                  ha-card { --dom: var(--c-current);  }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 68px !important; font-weight: 500 !important;
+                              line-height: 1.02 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 14px !important; margin-top: 4px; }
+          - type: custom:mini-graph-card
+            entities:
+              - sensor.living_room_current_consumption
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 2.5
+            line_color: "#4CC9F0"
+            height: 70
+            animate: true
+            show:
+              name: false
+              icon: false
+              state: false
+              legend: false
+              fill: fade
+            card_mod:
+              style: |
+                ha-card { background: none !important; border: none !important; box-shadow: none !important;
+                          -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+          - type: custom:mushroom-chips-card
+            alignment: start
+            chips:
+              - type: template
+                icon: mdi:power-plug
+                icon_color: blue
+                content: "plugs {{ (states('sensor.2nd_floor_today_s_consumption') | float(0) + states('sensor.living_room_today_s_consumption') | float(0)) | round(2) }}"
+              - type: template
+                icon: mdi:washing-machine
+                icon_color: cyan
+                content: "laundry {{ (states('sensor.daily_washer_energy') | float(0) + states('sensor.daily_dryer_energy') | float(0)) | round(2) }}"
+              - type: template
+                icon: mdi:car-electric
+                icon_color: green
+                content: "car {{ states('sensor.daily_car_charge_energy') | float(0) | round(1) }}"
+      - type: grid
+        cards:
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-template-card
+                primary: >-
+                  {{ states('sensor.living_room_temperature') | float(0) | round(1) }}°
+                secondary: >-
+                  Living room · {{ states('sensor.living_room_humidity') | float(0) | round(0) | int }}%
+                icon: >-
+                  {{ 'mdi:fire' if is_state('binary_sensor.living_room_heating','on') else 'mdi:radiator-off' if is_state('climate.living_room','off') else 'mdi:radiator' }}
+                icon_color: >-
+                  {{ 'orange' if is_state('binary_sensor.living_room_heating','on') else 'disabled' }}
+                badge_icon: >-
+                  {{ 'mdi:window-open-variant' if is_state('binary_sensor.living_room_window_open','on') else '' }}
+                badge_color: blue
+                layout: vertical
+                tap_action:
+                  action: navigate
+                  navigation_path: /dash-dusk/heating
+                card_mod:
+                  style:
+                    .: |
+                      ha-card {
+                        --dom: var(--c-ember);
+                        {% if is_state('binary_sensor.living_room_heating','on') %}
+                        background: linear-gradient(145deg, rgba(255,138,61,0.28), rgba(255,138,61,0.05)) !important;
+                        border-color: rgba(255,138,61,0.45) !important;
+                        {% endif %}
+                      }
+                    mushroom-state-info$: |
+                      .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 34px !important; font-weight: 500 !important; line-height: 1.05 !important; letter-spacing: -0.02em; }
+                      .secondary { color: #8E9AB8 !important; font-size: 13px !important; }
+              - type: custom:mushroom-template-card
+                primary: >-
+                  {{ states('sensor.bedroom_temperature') | float(0) | round(1) }}°
+                secondary: >-
+                  Bedroom · {{ states('sensor.bedroom_humidity') | float(0) | round(0) | int }}%
+                icon: >-
+                  {{ 'mdi:fire' if is_state('binary_sensor.bedroom_heating','on') else 'mdi:radiator-off' if is_state('climate.bedroom','off') else 'mdi:radiator' }}
+                icon_color: >-
+                  {{ 'orange' if is_state('binary_sensor.bedroom_heating','on') else 'disabled' }}
+                badge_icon: >-
+                  {{ 'mdi:window-open-variant' if is_state('binary_sensor.bedroom_window_open','on') else '' }}
+                badge_color: blue
+                layout: vertical
+                tap_action:
+                  action: navigate
+                  navigation_path: /dash-dusk/heating
+                card_mod:
+                  style:
+                    .: |
+                      ha-card {
+                        --dom: var(--c-ember);
+                        {% if is_state('binary_sensor.bedroom_heating','on') %}
+                        background: linear-gradient(145deg, rgba(255,138,61,0.28), rgba(255,138,61,0.05)) !important;
+                        border-color: rgba(255,138,61,0.45) !important;
+                        {% endif %}
+                      }
+                    mushroom-state-info$: |
+                      .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 34px !important; font-weight: 500 !important; line-height: 1.05 !important; letter-spacing: -0.02em; }
+                      .secondary { color: #8E9AB8 !important; font-size: 13px !important; }
+              - type: custom:mushroom-template-card
+                primary: >-
+                  {{ states('sensor.kiru_work_room_temperature') | float(0) | round(1) }}°
+                secondary: >-
+                  Work room · {{ states('sensor.kiru_work_room_humidity') | float(0) | round(0) | int }}%
+                icon: >-
+                  {{ 'mdi:fire' if is_state('binary_sensor.kiru_work_room_heating','on') else 'mdi:radiator-off' if is_state('climate.kiru_work_room','off') else 'mdi:radiator' }}
+                icon_color: >-
+                  {{ 'orange' if is_state('binary_sensor.kiru_work_room_heating','on') else 'disabled' }}
+                badge_icon: >-
+                  {{ 'mdi:window-open-variant' if is_state('binary_sensor.kiru_work_room_window_open','on') else '' }}
+                badge_color: blue
+                layout: vertical
+                tap_action:
+                  action: navigate
+                  navigation_path: /dash-dusk/heating
+                card_mod:
+                  style:
+                    .: |
+                      ha-card {
+                        --dom: var(--c-ember);
+                        {% if is_state('binary_sensor.kiru_work_room_heating','on') %}
+                        background: linear-gradient(145deg, rgba(255,138,61,0.28), rgba(255,138,61,0.05)) !important;
+                        border-color: rgba(255,138,61,0.45) !important;
+                        {% endif %}
+                      }
+                    mushroom-state-info$: |
+                      .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 34px !important; font-weight: 500 !important; line-height: 1.05 !important; letter-spacing: -0.02em; }
+                      .secondary { color: #8E9AB8 !important; font-size: 13px !important; }
+              - type: custom:mushroom-template-card
+                primary: >-
+                  {{ states('sensor.vini_work_room_temperature') | float(0) | round(1) }}°
+                secondary: >-
+                  Vini's room · {{ states('sensor.vini_work_room_humidity') | float(0) | round(0) | int }}%
+                icon: >-
+                  {{ 'mdi:fire' if is_state('binary_sensor.vini_work_room_heating','on') else 'mdi:radiator-off' if is_state('climate.vini_work_room','off') else 'mdi:radiator' }}
+                icon_color: >-
+                  {{ 'orange' if is_state('binary_sensor.vini_work_room_heating','on') else 'disabled' }}
+                badge_icon: >-
+                  {{ 'mdi:window-open-variant' if is_state('binary_sensor.vini_work_room_window_open','on') else '' }}
+                badge_color: blue
+                layout: vertical
+                tap_action:
+                  action: navigate
+                  navigation_path: /dash-dusk/heating
+                card_mod:
+                  style:
+                    .: |
+                      ha-card {
+                        --dom: var(--c-ember);
+                        {% if is_state('binary_sensor.vini_work_room_heating','on') %}
+                        background: linear-gradient(145deg, rgba(255,138,61,0.28), rgba(255,138,61,0.05)) !important;
+                        border-color: rgba(255,138,61,0.45) !important;
+                        {% endif %}
+                      }
+                    mushroom-state-info$: |
+                      .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 34px !important; font-weight: 500 !important; line-height: 1.05 !important; letter-spacing: -0.02em; }
+                      .secondary { color: #8E9AB8 !important; font-size: 13px !important; }
+      - type: grid
+        cards:
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ states('sensor.ground_floor_blacky_battery_level') if has_value('sensor.ground_floor_blacky_battery_level') else '--' }}%
+            secondary: >-
+              {{ (states('sensor.ground_floor_blacky_battery_range') | float(0) | round(0) | int ~ ' km') if has_value('sensor.ground_floor_blacky_battery_range') else 'No data, tap to wake' }} · {{ 'plugged in' if is_state('binary_sensor.ground_floor_blacky_charge_cable','on') else 'not plugged in' }}
+            icon: mdi:car-electric
+            icon_color: green
+            layout: horizontal
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.ground_floor_blacky_wake
+            card_mod:
+              style:
+                .: |
+                  ha-card { --dom: var(--c-charge); background: linear-gradient(90deg, rgba(123,228,149,0.26) {{ states('sensor.ground_floor_blacky_battery_level') | float(0) }}%, rgba(255,255,255,0.045) {{ states('sensor.ground_floor_blacky_battery_level') | float(0) }}%) !important; }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 64px !important; font-weight: 500 !important;
+                              line-height: 1.02 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 14px !important; margin-top: 4px; }
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ 'Running' if is_state('sensor.laundry_room_laundry_room_washer_machine_state','run') or is_state('sensor.laundry_room_kaayavekradhu_machine_state','run') else 'Idle' }}
+            secondary: >-
+              washer {{ states('sensor.daily_washer_energy') | float(0) | round(2) }} kWh · dryer {{ states('sensor.daily_dryer_energy') | float(0) | round(2) }} kWh
+            icon: mdi:washing-machine
+            icon_color: cyan
+            layout: horizontal
+            tap_action:
+              action: navigate
+              navigation_path: /dash-dusk/laundry
+            card_mod:
+              style:
+                .: |
+                  ha-card { --dom: var(--c-tide); {% if is_state('sensor.laundry_room_laundry_room_washer_machine_state','run') or is_state('sensor.laundry_room_kaayavekradhu_machine_state','run') %}background: linear-gradient(145deg, rgba(46,230,197,0.26), rgba(46,230,197,0.04)) !important;{% endif %} }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 44px !important; font-weight: 500 !important;
+                              line-height: 1.02 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 14px !important; margin-top: 4px; }
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:mushroom-entity-card
+                entity: switch.2nd_floor
+                name: 2nd floor lamp
+                icon_color: amber
+                tap_action:
+                  action: toggle
+                card_mod:
+                  style: |
+                    ha-card { --dom: var(--c-lamp); }
+              - type: custom:mushroom-entity-card
+                entity: input_boolean.vacation_mode
+                name: Vacation mode
+                icon_color: purple
+                tap_action:
+                  action: toggle
+                card_mod:
+                  style: |
+                    ha-card { --dom: #968CFF; }
+
+  # ───────────────────────── ENERGY ─────────────────────────
+  - title: Energy
+    path: energy
+    icon: mdi:lightning-bolt
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:mushroom-title-card
+            title: Energy
+            subtitle: Tracked devices (P1 meter will join here)
+      - type: grid
+        cards:
+          - type: heading
+            heading: Right now
+            icon: mdi:flash
+          - type: custom:mini-graph-card
+            name: Living room
+            entities:
+              - sensor.living_room_current_consumption
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 3
+            animate: true
+            color_thresholds:
+              - value: 0
+                color: "#2de2c8"
+              - value: 150
+                color: "#fbbf24"
+              - value: 500
+                color: "#fb7185"
+            show:
+              fill: fade
+          - type: custom:mini-graph-card
+            name: 2nd floor
+            entities:
+              - sensor.2nd_floor_current_consumption
+            hours_to_show: 24
+            points_per_hour: 2
+            line_width: 3
+            animate: true
+            color_thresholds:
+              - value: 0
+                color: "#b388ff"
+              - value: 150
+                color: "#fbbf24"
+              - value: 500
+                color: "#fb7185"
+            show:
+              fill: fade
+      - type: grid
+        cards:
+          - type: heading
+            heading: Last 7 days
+            icon: mdi:chart-bar
+          - type: custom:apexcharts-card
+            graph_type: bar
+            header:
+              show: true
+              title: Plug energy per day (kWh)
+              show_states: false
+            span:
+              end: day
+            apex_config:
+              chart:
+                height: 260
+              plotOptions:
+                bar:
+                  borderRadius: 6
+              grid:
+                borderColor: rgba(255,255,255,0.08)
+            graph_span: 7d
+            series:
+              - entity: sensor.living_room_today_s_consumption
+                name: Living room
+                color: "#2de2c8"
+                type: column
+                group_by:
+                  func: max
+                  duration: 1d
+              - entity: sensor.2nd_floor_today_s_consumption
+                name: 2nd floor
+                color: "#b388ff"
+                type: column
+                group_by:
+                  func: max
+                  duration: 1d
+      - type: grid
+        cards:
+          - type: heading
+            heading: This month
+            icon: mdi:calendar-month
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.living_room_this_month_s_consumption') }} kWh"
+            secondary: Living room plug
+            icon: mdi:sofa
+            icon_color: cyan
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.2nd_floor_this_month_s_consumption') }} kWh"
+            secondary: 2nd floor plug
+            icon: mdi:stairs-up
+            icon_color: purple
+          - type: custom:mushroom-template-card
+            primary: "{{ states('input_number.electricity_price') }} €/kWh"
+            secondary: Electricity price
+            icon: mdi:currency-eur
+            icon_color: green
+
+  # ───────────────────────── HEATING ─────────────────────────
+  - title: Heating
+    path: heating
+    icon: mdi:radiator
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: custom:mushroom-template-card
+            primary: Heating
+            secondary: "{{ expand('binary_sensor.living_room_heating','binary_sensor.bedroom_heating','binary_sensor.kiru_work_room_heating','binary_sensor.vini_work_room_heating') | selectattr('state','eq','on') | list | count }} of 4 rooms heating · API {{ states('sensor.kv_home_home_api_quota_remaining') }}/{{ states('sensor.kv_home_home_api_quota_limit') }}"
+            icon: ''
+            card_mod:
+              style:
+                .: |
+                  ha-card { background: none !important; border: none !important; box-shadow: none !important;
+                             -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 38px !important; font-weight: 500 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 14px !important; }
+          - type: custom:mushroom-chips-card
+            alignment: start
+            chips:
+              - type: template
+                icon: mdi:calendar-refresh
+                icon_color: green
+                content: Resume schedules
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.kv_home_resume_schedules
+              - type: template
+                icon: mdi:fire
+                icon_color: orange
+                content: Boost all
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.kv_home_boost_all
+              - type: template
+                icon: mdi:power
+                icon_color: red
+                content: All off
+                tap_action:
+                  action: perform-action
+                  perform_action: button.press
+                  target:
+                    entity_id: button.kv_home_turn_off_all
+      - type: grid
+        cards:
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ states('sensor.living_room_temperature') | float(0) | round(1) }}°
+            secondary: >-
+              Living room · {{ states('sensor.living_room_humidity') | float(0) | round(0) | int }}% humidity · heating {{ states('sensor.living_room_heating_power') | float(0) | round(0) | int }}%
+              {% if state_attr('climate.living_room','next_schedule_change') %} · next {{ state_attr('climate.living_room','next_schedule_temperature') }}° at {{ as_timestamp(state_attr('climate.living_room','next_schedule_change')) | timestamp_custom('%H:%M') }}{% endif %}
+            icon: mdi:sofa
+            icon_color: >-
+              {{ 'orange' if is_state('binary_sensor.living_room_heating','on') else 'disabled' }}
+            badge_icon: >-
+              {{ 'mdi:window-open-variant' if is_state('binary_sensor.living_room_window_open','on') else '' }}
+            badge_color: blue
+            card_mod:
+              style:
+                .: |
+                  ha-card {
+                    --dom: var(--c-ember);
+                    {% if is_state('binary_sensor.living_room_heating','on') %}
+                    background: linear-gradient(145deg, rgba(255,138,61,0.28), rgba(255,138,61,0.05)) !important;
+                    border-color: rgba(255,138,61,0.45) !important;
+                    {% endif %}
+                  }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 52px !important; font-weight: 500 !important; line-height: 1.02 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 13px !important; }
+          - type: custom:mushroom-climate-card
+            entity: climate.living_room
+            show_temperature_control: true
+            collapsible_controls: false
+            hvac_modes:
+              - heat
+              - auto
+              - "off"
+      - type: grid
+        cards:
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ states('sensor.bedroom_temperature') | float(0) | round(1) }}°
+            secondary: >-
+              Bedroom · {{ states('sensor.bedroom_humidity') | float(0) | round(0) | int }}% humidity · heating {{ states('sensor.bedroom_heating_power') | float(0) | round(0) | int }}%
+              {% if state_attr('climate.bedroom','next_schedule_change') %} · next {{ state_attr('climate.bedroom','next_schedule_temperature') }}° at {{ as_timestamp(state_attr('climate.bedroom','next_schedule_change')) | timestamp_custom('%H:%M') }}{% endif %}
+            icon: mdi:bed
+            icon_color: >-
+              {{ 'orange' if is_state('binary_sensor.bedroom_heating','on') else 'disabled' }}
+            badge_icon: >-
+              {{ 'mdi:window-open-variant' if is_state('binary_sensor.bedroom_window_open','on') else '' }}
+            badge_color: blue
+            card_mod:
+              style:
+                .: |
+                  ha-card {
+                    --dom: var(--c-ember);
+                    {% if is_state('binary_sensor.bedroom_heating','on') %}
+                    background: linear-gradient(145deg, rgba(255,138,61,0.28), rgba(255,138,61,0.05)) !important;
+                    border-color: rgba(255,138,61,0.45) !important;
+                    {% endif %}
+                  }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 52px !important; font-weight: 500 !important; line-height: 1.02 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 13px !important; }
+          - type: custom:mushroom-climate-card
+            entity: climate.bedroom
+            show_temperature_control: true
+            collapsible_controls: false
+            hvac_modes:
+              - heat
+              - auto
+              - "off"
+      - type: grid
+        cards:
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ states('sensor.kiru_work_room_temperature') | float(0) | round(1) }}°
+            secondary: >-
+              Kiru work room · {{ states('sensor.kiru_work_room_humidity') | float(0) | round(0) | int }}% humidity · heating {{ states('sensor.kiru_work_room_heating_power') | float(0) | round(0) | int }}%
+              {% if state_attr('climate.kiru_work_room','next_schedule_change') %} · next {{ state_attr('climate.kiru_work_room','next_schedule_temperature') }}° at {{ as_timestamp(state_attr('climate.kiru_work_room','next_schedule_change')) | timestamp_custom('%H:%M') }}{% endif %}
+            icon: mdi:desk
+            icon_color: >-
+              {{ 'orange' if is_state('binary_sensor.kiru_work_room_heating','on') else 'disabled' }}
+            badge_icon: >-
+              {{ 'mdi:window-open-variant' if is_state('binary_sensor.kiru_work_room_window_open','on') else '' }}
+            badge_color: blue
+            card_mod:
+              style:
+                .: |
+                  ha-card {
+                    --dom: var(--c-ember);
+                    {% if is_state('binary_sensor.kiru_work_room_heating','on') %}
+                    background: linear-gradient(145deg, rgba(255,138,61,0.28), rgba(255,138,61,0.05)) !important;
+                    border-color: rgba(255,138,61,0.45) !important;
+                    {% endif %}
+                  }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 52px !important; font-weight: 500 !important; line-height: 1.02 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 13px !important; }
+          - type: custom:mushroom-climate-card
+            entity: climate.kiru_work_room
+            show_temperature_control: true
+            collapsible_controls: false
+            hvac_modes:
+              - heat
+              - auto
+              - "off"
+      - type: grid
+        cards:
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ states('sensor.vini_work_room_temperature') | float(0) | round(1) }}°
+            secondary: >-
+              Vini work room · {{ states('sensor.vini_work_room_humidity') | float(0) | round(0) | int }}% humidity · heating {{ states('sensor.vini_work_room_heating_power') | float(0) | round(0) | int }}%
+              {% if state_attr('climate.vini_work_room','next_schedule_change') %} · next {{ state_attr('climate.vini_work_room','next_schedule_temperature') }}° at {{ as_timestamp(state_attr('climate.vini_work_room','next_schedule_change')) | timestamp_custom('%H:%M') }}{% endif %}
+            icon: mdi:desk-lamp
+            icon_color: >-
+              {{ 'orange' if is_state('binary_sensor.vini_work_room_heating','on') else 'disabled' }}
+            badge_icon: >-
+              {{ 'mdi:window-open-variant' if is_state('binary_sensor.vini_work_room_window_open','on') else '' }}
+            badge_color: blue
+            card_mod:
+              style:
+                .: |
+                  ha-card {
+                    --dom: var(--c-ember);
+                    {% if is_state('binary_sensor.vini_work_room_heating','on') %}
+                    background: linear-gradient(145deg, rgba(255,138,61,0.28), rgba(255,138,61,0.05)) !important;
+                    border-color: rgba(255,138,61,0.45) !important;
+                    {% endif %}
+                  }
+                mushroom-state-info$: |
+                  .primary { font-family: ui-serif, "New York", Georgia, serif; font-size: 52px !important; font-weight: 500 !important; line-height: 1.02 !important; letter-spacing: -0.02em; }
+                  .secondary { color: #8E9AB8 !important; font-size: 13px !important; }
+          - type: custom:mushroom-climate-card
+            entity: climate.vini_work_room
+            show_temperature_control: true
+            collapsible_controls: false
+            hvac_modes:
+              - heat
+              - auto
+              - "off"
+
+  # ───────────────────────── LAUNDRY ─────────────────────────
+  - title: Laundry
+    path: laundry
+    icon: mdi:washing-machine
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: custom:mushroom-title-card
+            title: Laundry room
+            subtitle: Washer and dryer
+      - type: grid
+        cards:
+          - type: heading
+            heading: Washer
+            icon: mdi:washing-machine
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.laundry_room_laundry_room_washer_machine_state') | title }}"
+            secondary: >-
+              {{ states('sensor.laundry_room_laundry_room_washer_job_state') | replace('_',' ') | title }}
+              {% if states('sensor.laundry_room_laundry_room_washer_completion_time') not in ['unknown','unavailable'] %}
+              · done {{ as_timestamp(states('sensor.laundry_room_laundry_room_washer_completion_time')) | timestamp_custom('%H:%M') }}{% endif %}
+            icon: mdi:washing-machine
+            icon_color: "{{ 'cyan' if is_state('sensor.laundry_room_laundry_room_washer_machine_state','run') else 'disabled' }}"
+            layout: vertical
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.daily_washer_energy') | float(0) | round(2) }} kWh today"
+            secondary: "{{ states('sensor.daily_washer_water') | float(0) | round(0) | int }} L water today"
+            icon: mdi:water
+            icon_color: blue
+      - type: grid
+        cards:
+          - type: heading
+            heading: Dryer
+            icon: mdi:tumble-dryer
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.laundry_room_kaayavekradhu_machine_state') | title }}"
+            secondary: >-
+              {{ states('sensor.laundry_room_kaayavekradhu_job_state') | replace('_',' ') | title }}
+              {% if states('sensor.laundry_room_kaayavekradhu_completion_time') not in ['unknown','unavailable'] %}
+              · done {{ as_timestamp(states('sensor.laundry_room_kaayavekradhu_completion_time')) | timestamp_custom('%H:%M') }}{% endif %}
+            icon: mdi:tumble-dryer
+            icon_color: "{{ 'orange' if is_state('sensor.laundry_room_kaayavekradhu_machine_state','run') else 'disabled' }}"
+            layout: vertical
+          - type: custom:mushroom-template-card
+            primary: "{{ states('sensor.daily_dryer_energy') | float(0) | round(2) }} kWh today"
+            secondary: "{{ states('sensor.laundry_room_kaayavekradhu_power') }} W now"
+            icon: mdi:flash
+            icon_color: amber
+
+  # ───────────────────────── TESLA ─────────────────────────
+  - title: Tesla
+    path: tesla
+    icon: mdi:car-electric
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        column_span: 3
+        cards:
+          - type: custom:mushroom-title-card
+            title: Blacky
+            subtitle: "{{ states('sensor.ground_floor_blacky_shift_state') | title }} · {{ states('sensor.ground_floor_blacky_charging') | title }}"
+            grid_options: {columns: 24}
+          - type: custom:mushroom-entity-card
+            entity: button.ground_floor_blacky_wake
+            name: Wake car
+            icon: mdi:power-sleep
+            grid_options: {columns: 12}
+            tap_action:
+              action: perform-action
+              perform_action: button.press
+              target:
+                entity_id: button.ground_floor_blacky_wake
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            heading: Right now
+            icon: mdi:car-info
+          - type: custom:mushroom-template-card
+            primary: >-
+              {% set n = ['binary_sensor.ground_floor_blacky_front_driver_door', 'binary_sensor.ground_floor_blacky_front_passenger_door', 'binary_sensor.ground_floor_blacky_rear_driver_door', 'binary_sensor.ground_floor_blacky_rear_passenger_door', 'binary_sensor.ground_floor_blacky_front_driver_window', 'binary_sensor.ground_floor_blacky_front_passenger_window', 'binary_sensor.ground_floor_blacky_rear_driver_window', 'binary_sensor.ground_floor_blacky_rear_passenger_window', 'cover.ground_floor_blacky_boot', 'cover.ground_floor_blacky_froot'] | select('is_state', ['on','open']) | list | count %}
+              {{ 'All closed' if n == 0 else n ~ ' open' }}
+            secondary: Doors, windows, boot and frunk
+            icon: mdi:car-door
+            icon_color: "{{ 'green' if ['binary_sensor.ground_floor_blacky_front_driver_door', 'binary_sensor.ground_floor_blacky_front_passenger_door', 'binary_sensor.ground_floor_blacky_rear_driver_door', 'binary_sensor.ground_floor_blacky_rear_passenger_door', 'binary_sensor.ground_floor_blacky_front_driver_window', 'binary_sensor.ground_floor_blacky_front_passenger_window', 'binary_sensor.ground_floor_blacky_rear_driver_window', 'binary_sensor.ground_floor_blacky_rear_passenger_window', 'cover.ground_floor_blacky_boot', 'cover.ground_floor_blacky_froot'] | select('is_state', ['on','open']) | list | count == 0 else 'orange' }}"
+            layout: vertical
+            grid_options: {columns: 12}
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ states('sensor.ground_floor_blacky_time_to_arrival') if has_value('sensor.ground_floor_blacky_time_to_arrival') else 'Not navigating' }}
+            secondary: >-
+              {% if has_value('sensor.ground_floor_blacky_distance_to_arrival') %}
+              {{ states('sensor.ground_floor_blacky_destination') if has_value('sensor.ground_floor_blacky_destination') else 'Destination' }} · {{ states('sensor.ground_floor_blacky_distance_to_arrival') }} km{% if has_value('sensor.ground_floor_blacky_state_of_charge_at_arrival') %} · arrive with {{ states('sensor.ground_floor_blacky_state_of_charge_at_arrival') }}%{% endif %}
+              {% else %}No trip active{% endif %}
+            icon: mdi:navigation-variant
+            icon_color: blue
+            layout: vertical
+            grid_options: {columns: 12}
+          - type: custom:mushroom-template-card
+            primary: >-
+              {{ states('update.ground_floor_blacky_update') | title }}
+            secondary: Software update
+            icon: mdi:update
+            icon_color: "{{ 'amber' if is_state('update.ground_floor_blacky_update','on') else 'disabled' }}"
+            layout: vertical
+            grid_options: {columns: 12}
+      - type: grid
+        cards:
+          - type: heading
+            heading: Battery
+            icon: mdi:battery-charging
+          - type: gauge
+            entity: sensor.ground_floor_blacky_battery_level
+            min: 0
+            max: 100
+            needle: true
+            severity: {red: 0, yellow: 20, green: 40}
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - sensor.ground_floor_blacky_battery_range
+              - sensor.ground_floor_blacky_estimate_battery_range
+              - sensor.ground_floor_blacky_usable_battery_level
+              - number.ground_floor_blacky_charge_limit
+      - type: grid
+        cards:
+          - type: heading
+            heading: Charging
+            icon: mdi:ev-plug-type2
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - sensor.ground_floor_blacky_charging
+              - binary_sensor.ground_floor_blacky_charge_cable
+              - sensor.ground_floor_blacky_charger_power
+              - sensor.ground_floor_blacky_charge_rate
+              - sensor.ground_floor_blacky_charge_energy_added
+              - sensor.ground_floor_blacky_time_to_full_charge
+              - number.ground_floor_blacky_charge_current
+              - switch.ground_floor_blacky_charge
+      - type: grid
+        cards:
+          - type: heading
+            heading: Climate and security
+            icon: mdi:car-cog
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - climate.ground_floor_blacky_climate
+              - sensor.ground_floor_blacky_inside_temperature
+              - sensor.ground_floor_blacky_outside_temperature
+              - binary_sensor.ground_floor_blacky_preconditioning
+              - binary_sensor.ground_floor_blacky_battery_heater
+              - lock.ground_floor_blacky_lock
+              - switch.ground_floor_blacky_sentry_mode
+              - cover.ground_floor_blacky_charge_port_door
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Location
+            icon: mdi:map-marker
+          - type: map
+            entities:
+              - device_tracker.ground_floor_blacky_location
+            hours_to_show: 24
+            aspect_ratio: "2:1"
+      - type: grid
+        cards:
+          - type: heading
+            heading: Drive
+            icon: mdi:steering
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - sensor.ground_floor_blacky_speed
+              - sensor.ground_floor_blacky_power
+              - sensor.ground_floor_blacky_odometer
+              - binary_sensor.ground_floor_blacky_user_present
+      - type: grid
+        column_span: 3
+        cards:
+          - type: heading
+            heading: Last 7 days
+            icon: mdi:chart-line
+          - type: history-graph
+            hours_to_show: 168
+            entities:
+              - entity: sensor.ground_floor_blacky_battery_level
+                name: Battery %
+              - entity: sensor.ground_floor_blacky_charger_power
+                name: Charger power
+              - entity: sensor.ground_floor_blacky_inside_temperature
+                name: Inside temp
+
+  # ───────────────────────── LIVING ROOM ─────────────────────────
+  - title: Living room
+    path: living-room
+    icon: mdi:sofa
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: custom:mushroom-title-card
+            title: Living room
+      - type: grid
+        cards:
+          - type: heading
+            heading: Entertainment
+            icon: mdi:television
+          - type: custom:mushroom-media-player-card
+            entity: media_player.vk_tv
+            use_media_info: true
+            show_volume_level: true
+            volume_controls:
+              - volume_mute
+              - volume_set
+              - volume_buttons
+            media_controls:
+              - on_off
+              - play_pause_stop
+      - type: grid
+        cards:
+          - type: heading
+            heading: Power
+            icon: mdi:power-plug
+          - type: custom:mushroom-entity-card
+            entity: switch.living_room
+            name: Living room plug
+            tap_action:
+              action: toggle
+          - type: custom:mini-graph-card
+            name: Plug draw (24h)
+            entities:
+              - sensor.living_room_current_consumption
+            hours_to_show: 24
+            line_width: 3
+            animate: true
+            show:
+              fill: fade

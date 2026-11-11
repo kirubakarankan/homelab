@@ -1,0 +1,254 @@
+# Home alerts & automations: laundry, Tesla, plugs, weather, system health.
+
+script:
+  notify_phone:
+    alias: Notify phone
+    fields:
+      title: {description: Title}
+      message: {description: Message}
+      tag: {description: Replaces older notification with same tag}
+    sequence:
+      - action: notify.mobile_app_kirus_iphone
+        data:
+          title: "{{ title | default('Home') }}"
+          message: "{{ message }}"
+          data:
+            tag: "{{ tag | default('home') }}"
+
+command_line:
+  - sensor:
+      name: Pi CPU temperature
+      unique_id: pi_cpu_temperature
+      command: "awk '{printf \"%.1f\", $1/1000}' /sys/class/thermal/thermal_zone0/temp"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      scan_interval: 60
+  - sensor:
+      name: Pi disk used
+      unique_id: pi_disk_used
+      command: "df -P /config | awk 'NR==2{gsub(\"%\",\"\",$5);print $5}'"
+      unit_of_measurement: "%"
+      scan_interval: 600
+
+automation:
+  # ───────── Laundry ─────────
+  - id: laundry_washer_done
+    alias: Washer finished
+    triggers:
+      - trigger: state
+        entity_id: sensor.laundry_room_laundry_room_washer_machine_state
+        from: run
+        to: stop
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🧺 Washer done"
+          message: "Washer finished. Move the clothes to the dryer."
+          tag: washer
+
+  - id: laundry_dryer_done
+    alias: Dryer finished
+    triggers:
+      - trigger: state
+        entity_id: sensor.laundry_room_kaayavekradhu_machine_state
+        from: run
+        to: stop
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "👕 Dryer done"
+          message: "Dryer finished. Clothes are ready to take out."
+          tag: dryer
+
+  # ───────── Tesla ─────────
+  - id: tesla_plug_in_reminder
+    alias: Tesla - plug in reminder
+    triggers:
+      - trigger: time
+        at: "21:15:00"
+    conditions:
+      - condition: numeric_state
+        entity_id: sensor.ground_floor_blacky_battery_level
+        below: 30
+      - condition: state
+        entity_id: binary_sensor.ground_floor_blacky_charge_cable
+        state: "off"
+      - condition: state
+        entity_id: device_tracker.ground_floor_blacky_location
+        state: home
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🔌 Plug in Blacky"
+          message: "Battery is {{ states('sensor.ground_floor_blacky_battery_level') }}% and the cable is not connected."
+          tag: tesla_plug
+
+  - id: tesla_charge_complete
+    alias: Tesla - charge complete
+    triggers:
+      - trigger: state
+        entity_id: sensor.ground_floor_blacky_charging
+        to: complete
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🔋 Blacky fully charged"
+          message: "Battery {{ states('sensor.ground_floor_blacky_battery_level') }}%, range {{ states('sensor.ground_floor_blacky_battery_range') | float(0) | round(0) | int }} km."
+          tag: tesla_charge
+
+  - id: tesla_left_open
+    alias: Tesla - door/window/boot open or unlocked
+    triggers:
+      - trigger: template
+        value_template: >-
+          {{ is_state('lock.ground_floor_blacky_lock','unlocked')
+             or is_state('cover.ground_floor_blacky_boot','open')
+             or is_state('cover.ground_floor_blacky_froot','open')
+             or expand('binary_sensor.ground_floor_blacky_front_driver_door','binary_sensor.ground_floor_blacky_front_passenger_door',
+                       'binary_sensor.ground_floor_blacky_rear_driver_door','binary_sensor.ground_floor_blacky_rear_passenger_door',
+                       'binary_sensor.ground_floor_blacky_front_driver_window','binary_sensor.ground_floor_blacky_front_passenger_window',
+                       'binary_sensor.ground_floor_blacky_rear_driver_window','binary_sensor.ground_floor_blacky_rear_passenger_window')
+                | selectattr('state','eq','on') | list | count > 0 }}
+        for: "00:10:00"
+    conditions:
+      - condition: state
+        entity_id: binary_sensor.ground_floor_blacky_user_present
+        state: "off"
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🚗 Blacky left open"
+          message: >-
+            Something on the car has been open or unlocked for 10 minutes
+            (lock: {{ states('lock.ground_floor_blacky_lock') }}, boot: {{ states('cover.ground_floor_blacky_boot') }}, frunk: {{ states('cover.ground_floor_blacky_froot') }}).
+          tag: tesla_open
+
+  # ───────── Plugs & power ─────────
+  - id: plug_overload
+    alias: Plug overload
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.living_room_overloaded
+          - binary_sensor.2nd_floor_overloaded
+        to: "on"
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "⚠️ Plug overload"
+          message: "{{ trigger.to_state.name }} reports an overload."
+          tag: overload
+
+  - id: plug_high_power
+    alias: Plug high power draw
+    triggers:
+      - trigger: numeric_state
+        entity_id:
+          - sensor.living_room_current_consumption
+          - sensor.2nd_floor_current_consumption
+        above: 1500
+        for: "00:05:00"
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "⚡ High power draw"
+          message: "{{ trigger.to_state.name }} has been drawing {{ trigger.to_state.state }} W for 5 minutes."
+          tag: highpower
+
+  - id: late_night_tv
+    alias: TV still on late at night
+    triggers:
+      - trigger: time
+        at: "01:00:00"
+    conditions:
+      - condition: state
+        entity_id: media_player.vk_tv
+        state: [playing, paused, idle]
+      - condition: numeric_state
+        entity_id: sensor.living_room_current_consumption
+        above: 60
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "📺 TV is still on"
+          message: "It's 01:00 and the living room is drawing {{ states('sensor.living_room_current_consumption') }} W."
+          tag: tv_late
+
+  # ───────── Weather ─────────
+  - id: umbrella_reminder
+    alias: Umbrella reminder
+    triggers:
+      - trigger: time
+        at: "07:30:00"
+      # retry: met.no returns 503 now and then
+      - trigger: time
+        at: "08:15:00"
+    conditions:
+      - condition: not
+        conditions:
+          - condition: state
+            entity_id: weather.forecast_home
+            state: ["unavailable", "unknown"]
+      - condition: template
+        value_template: "{{ this.attributes.last_triggered is none or as_local(this.attributes.last_triggered).date() != now().date() }}"
+    actions:
+      - action: weather.get_forecasts
+        target:
+          entity_id: weather.forecast_home
+        data:
+          type: daily
+        response_variable: fc
+      - variables:
+          today: "{{ (fc['weather.forecast_home'].forecast | default([]))[0] | default({}) }}"
+      - condition: template
+        value_template: "{{ today.precipitation | default(0) | float(0) >= 1 }}"
+      - action: script.notify_phone
+        data:
+          title: "☔ Take an umbrella"
+          message: "Rain expected today: {{ today.precipitation }} mm. High {{ today.temperature }}°C."
+          tag: umbrella
+
+  # ───────── System health ─────────
+  - id: backup_failed
+    alias: Backup failed
+    triggers:
+      - trigger: template
+        value_template: >-
+          {% set a = states('sensor.backup_last_attempted_automatic_backup') %}
+          {% set s = states('sensor.backup_last_successful_automatic_backup') %}
+          {{ a not in ['unknown','unavailable']
+             and (s in ['unknown','unavailable'] or as_timestamp(a) - as_timestamp(s) > 600) }}
+        for: "00:15:00"
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "💾 Backup problem"
+          message: "The last automatic backup attempt did not succeed."
+          tag: backup
+
+  - id: pi_hot
+    alias: Raspberry Pi too hot
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.pi_cpu_temperature
+        above: 75
+        for: "00:05:00"
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🌡 Pi is running hot"
+          message: "CPU temperature is {{ states('sensor.pi_cpu_temperature') }} °C."
+          tag: pi_hot
+
+  - id: pi_disk_full
+    alias: Pi disk nearly full
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.pi_disk_used
+        above: 90
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "💽 Pi disk almost full"
+          message: "Disk is {{ states('sensor.pi_disk_used') }}% used."
+          tag: pi_disk

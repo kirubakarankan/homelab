@@ -1,0 +1,63 @@
+# Internet drop alert. Push can't leave the house during an outage, so:
+#  - while down: local HA bell notification (best-effort push too)
+#  - when back:  push with how long it was down
+
+command_line:
+  - binary_sensor:
+      name: Internet
+      unique_id: internet_up
+      device_class: connectivity
+      command: "if ping -c1 -W2 1.1.1.1 >/dev/null 2>&1 || ping -c1 -W2 8.8.8.8 >/dev/null 2>&1; then echo ON; else echo OFF; fi"
+      scan_interval: 30
+  - binary_sensor:
+      name: Router
+      unique_id: router_up
+      device_class: connectivity
+      command: "if ping -c1 -W2 192.168.2.254 >/dev/null 2>&1; then echo ON; else echo OFF; fi"
+      scan_interval: 30
+
+automation:
+  - id: internet_down
+    alias: Internet down
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.internet
+        to: "off"
+        for: "00:03:00"
+    actions:
+      - action: persistent_notification.create
+        data:
+          title: "🌐 Internet is down"
+          notification_id: internet_down
+          message: >-
+            No internet for 3+ minutes since {{ (now() - timedelta(minutes=3)).strftime('%H:%M') }}.
+            Router is {{ 'reachable, so the problem is the ISP/modem line' if is_state('binary_sensor.router','on') else 'NOT reachable, so check the router/power' }}.
+      - action: script.notify_phone
+        continue_on_error: true
+        data:
+          title: "🌐 Internet is down"
+          message: "No internet for 3 minutes. Router {{ 'reachable (ISP issue)' if is_state('binary_sensor.router','on') else 'unreachable' }}."
+          tag: internet
+
+  - id: internet_back
+    alias: Internet back
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.internet
+        from: "off"
+        to: "on"
+    conditions:
+      - condition: template
+        value_template: "{{ (now() - trigger.from_state.last_changed).total_seconds() > 90 }}"
+    actions:
+      - variables:
+          mins: "{{ ((now() - trigger.from_state.last_changed).total_seconds() / 60) | round(0) | int }}"
+          since: "{{ as_local(trigger.from_state.last_changed).strftime('%H:%M') }}"
+      - action: persistent_notification.dismiss
+        data:
+          notification_id: internet_down
+      - action: script.notify_phone
+        data:
+          title: "✅ Internet is back"
+          message: "It was down for {{ mins }} min (from {{ since }})."
+          tag: internet

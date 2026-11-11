@@ -1,0 +1,112 @@
+# Tado X heating alerts
+automation:
+  - id: heating_window_open_heating_on
+    alias: Heating - window open while heating
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.living_room_window_open
+          - binary_sensor.bedroom_window_open
+          - binary_sensor.kiru_work_room_window_open
+          - binary_sensor.vini_work_room_window_open
+        to: "on"
+        for: "00:10:00"
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ is_state(trigger.entity_id | replace('_window_open', '_heating'), 'on') }}
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🪟 Window open, heating on"
+          message: "{{ trigger.to_state.name | replace(' Window Open', '') }}: window open for 10 min while the heating is running."
+          tag: "window_{{ trigger.entity_id }}"
+
+  - id: heating_window_open_long
+    alias: Heating - window open a long time
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.living_room_window_open
+          - binary_sensor.bedroom_window_open
+          - binary_sensor.kiru_work_room_window_open
+          - binary_sensor.vini_work_room_window_open
+        to: "on"
+        for: "00:45:00"
+    conditions:
+      - condition: numeric_state
+        entity_id: weather.forecast_home
+        attribute: temperature
+        below: 12
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🪟 Window open for 45 min"
+          message: "{{ trigger.to_state.name | replace(' Window Open', '') }}: still open, and it is {{ state_attr('weather.forecast_home','temperature') }}°C outside."
+          tag: "windowlong_{{ trigger.entity_id }}"
+
+  - id: heating_room_cold
+    alias: Heating - room too cold
+    triggers:
+      - trigger: numeric_state
+        entity_id:
+          - sensor.living_room_temperature
+          - sensor.bedroom_temperature
+          - sensor.kiru_work_room_temperature
+          - sensor.vini_work_room_temperature
+        below: 16
+        for: "00:30:00"
+    conditions:
+      - condition: time
+        after: "07:00:00"
+        before: "22:30:00"
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🥶 Room is cold"
+          message: "{{ trigger.to_state.name | replace(' Temperature', '') }} has been below 16°C for 30 minutes ({{ trigger.to_state.state }}°C)."
+          tag: "cold_{{ trigger.entity_id }}"
+
+  - id: heating_battery_low
+    alias: Heating - radiator valve battery low
+    triggers:
+      - trigger: state
+        entity_id:
+          - binary_sensor.vanne_bedroom_battery_low
+          - binary_sensor.vanne_kiru_work_room_battery_low
+          - binary_sensor.vanne_vini_work_room_battery_low
+          - binary_sensor.thermostat_living_room_battery_low
+        to: "on"
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "🔋 Tado battery low"
+          message: "{{ trigger.to_state.name | replace(' Battery Low', '') }} needs new batteries."
+          tag: "battery_{{ trigger.entity_id }}"
+
+  - id: heating_bridge_offline
+    alias: Heating - Tado bridge offline
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.bridge_x_6880_connectivity
+        to: "off"
+        for: "00:15:00"
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "📡 Tado bridge offline"
+          message: "The Tado X bridge has been unreachable for 15 minutes."
+          tag: tado_bridge
+
+  - id: heating_api_quota_low
+    alias: Heating - Tado API quota low
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.kv_home_home_api_quota_remaining
+        below: 100
+    actions:
+      - action: script.notify_phone
+        data:
+          title: "⚠️ Tado API quota low"
+          message: "Only {{ states('sensor.kv_home_home_api_quota_remaining') }} Tado API calls left today. Heating data may stop updating until {{ as_timestamp(states('sensor.kv_home_home_api_reset_time')) | timestamp_custom('%H:%M') }}."
+          tag: tado_quota

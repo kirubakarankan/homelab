@@ -1,0 +1,19 @@
+[Unit]
+Description=Open WebUI
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+ContainerName=open-webui
+Image=ghcr.io/open-webui/open-webui@sha256:975e3965dcf5832804d2f77e167920794757027c5a2046917d42023d75fac431
+Network=host
+Environment=PORT=3000
+Environment=OLLAMA_BASE_URL=http://127.0.0.1:11434
+Volume=/opt/open-webui:/app/backend/data
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target
